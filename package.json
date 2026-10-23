@@ -1,0 +1,34 @@
+{
+  "name": "adaptive-planner",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Personal AI Agent Platform - Goal-aware, multi-tool adaptive planning backend",
+  "packageManager": "pnpm@11.15.1",
+  "scripts": {
+    "dev": "pnpm dev:api",
+    "dev:api": "pnpm --filter @adaptive-planner/api run start:dev",
+    "dev:worker": "pnpm --filter @adaptive-planner/worker run start:dev",
+    "dev:web": "pnpm --filter web run dev",
+    "dev:all": "pnpm --parallel --filter @adaptive-planner/api --filter @adaptive-planner/worker run start:dev",
+    "build": "pnpm --filter \"./packages/*\" run build && pnpm --filter \"./apps/api\" run build && pnpm --filter \"./apps/worker\" run build",
+    "build:all": "pnpm build && pnpm --filter web run build",
+    "db:generate": "prisma generate --schema=prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema=prisma/schema.prisma",
+    "db:seed": "tsx prisma/seed.ts",
+    "test": "pnpm -r run test",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "prisma": "^7.1.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "pg": "^8.23.1"
+  }
+}

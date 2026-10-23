@@ -1,0 +1,27 @@
+{
+  "name": "@adaptive-planner/worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/main",
+    "start:dev": "tsx watch src/main.ts",
+    "test": "echo \"No worker tests specified\" && exit 0"
+  },
+  "dependencies": {
+    "@adaptive-planner/config": "workspace:*",
+    "@adaptive-planner/contracts": "workspace:*",
+    "@adaptive-planner/tool-sdk": "workspace:*",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.1.0",
+    "bullmq": "^5.41.6",
+    "dotenv": "^16.4.7",
+    "ioredis": "^5.6.0",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

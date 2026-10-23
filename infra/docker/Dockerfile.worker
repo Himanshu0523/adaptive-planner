@@ -1,0 +1,34 @@
+# Multi-stage production build for BullMQ Worker
+FROM node:24-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /app
+
+FROM base AS dependencies
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+COPY packages/ ./packages/
+COPY apps/worker/package.json ./apps/worker/
+COPY prisma/ ./prisma/
+RUN pnpm install --frozen-lockfile
+
+FROM dependencies AS builder
+COPY . .
+RUN pnpm --filter @adaptive-planner/contracts run build
+RUN pnpm --filter @adaptive-planner/tool-sdk run build
+RUN pnpm --filter @adaptive-planner/config run build
+RUN pnpm exec prisma generate --schema=prisma/schema.prisma
+RUN pnpm --filter @adaptive-planner/worker run build
+
+FROM base AS runner
+ENV NODE_ENV=production
+WORKDIR /app
+
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/worker/dist ./apps/worker/dist
+COPY --from=builder /app/apps/worker/package.json ./apps/worker/package.json
+COPY --from=builder /app/prisma ./prisma
+
+CMD ["node", "apps/worker/dist/main"]

@@ -1,0 +1,36 @@
+# Multi-stage production build for NestJS API
+FROM node:24-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /app
+
+FROM base AS dependencies
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+COPY packages/ ./packages/
+COPY apps/api/package.json ./apps/api/
+COPY prisma/ ./prisma/
+RUN pnpm install --frozen-lockfile
+
+FROM dependencies AS builder
+COPY . .
+RUN pnpm --filter @adaptive-planner/contracts run build
+RUN pnpm --filter @adaptive-planner/tool-sdk run build
+RUN pnpm --filter @adaptive-planner/config run build
+RUN pnpm exec prisma generate --schema=prisma/schema.prisma
+RUN pnpm --filter @adaptive-planner/api run build
+
+FROM base AS runner
+ENV NODE_ENV=production
+WORKDIR /app
+
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+COPY --from=builder /app/prisma ./prisma
+
+EXPOSE 3000
+
+CMD ["node", "apps/api/dist/main"]
