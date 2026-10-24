@@ -34,17 +34,12 @@ export default function DashboardPage() {
   const pendingTasks = plannedTasks.filter((t) => t.status !== "done");
 
   // Recommended single next action
-  const focusTask = inProgressTasks[0] || pendingTasks[0] || {
-    id: "focus-1",
-    title: "Finish the first draft of your project proposal",
-    estimatedMinutes: 45,
-    goalTitle: "Launch MVP Web App",
-  };
+  const focusTask = inProgressTasks[0] || pendingTasks[0] || null;
 
   const primaryGoalProgress =
     primaryGoal && primaryGoal.totalTasks > 0
-      ? Math.round((primaryGoal.completedTasks / primaryGoal.totalTasks) * 100)
-      : 60;
+      ? Math.round(((primaryGoal.completedTasks || 0) / primaryGoal.totalTasks) * 100)
+      : 0;
 
   return (
     <div className="space-y-8">
@@ -72,7 +67,9 @@ export default function DashboardPage() {
               Adaptive Coach Perspective
             </p>
             <p className="text-xs text-stone-600 mt-0.5 leading-relaxed">
-              Your scheduled workload fits comfortably within your 2.5-hour afternoon focus window. No rushing necessary.
+              {plannedTasks.length > 0
+                ? `${pendingTasks.length} task${pendingTasks.length === 1 ? "" : "s"} planned today. Take regular breaks between deep work sessions.`
+                : "Your schedule is currently open. Define a goal or add a quick task to build momentum."}
             </p>
           </div>
         </div>
@@ -94,32 +91,65 @@ export default function DashboardPage() {
             </span>
             <span className="text-xs text-stone-500 font-medium flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" />
-              <span>Estimated: {focusTask.estimatedMinutes || 45} minutes</span>
+              <span>{focusTask ? `Estimated: ${focusTask.estimatedMinutes || 30} minutes` : "Open Schedule"}</span>
             </span>
           </div>
 
-          <div className="space-y-1">
-            <h2 className="text-xl sm:text-2xl font-bold text-stone-900 leading-snug">
-              {focusTask.title}
-            </h2>
-            <p className="text-xs text-stone-500">
-              Part of goal: <span className="font-semibold text-stone-700">{focusTask.goalTitle || primaryGoal?.title || "Product Development"}</span>
-            </p>
-          </div>
+          {focusTask ? (
+            <>
+              <div className="space-y-1">
+                <h2 className="text-xl sm:text-2xl font-bold text-stone-900 leading-snug">
+                  {focusTask.title}
+                </h2>
+                <p className="text-xs text-stone-500">
+                  Part of goal: <span className="font-semibold text-stone-700">{focusTask.goalTitle || primaryGoal?.title || "Daily Priority"}</span>
+                </p>
+              </div>
 
-          <div className="pt-2 flex flex-wrap items-center gap-3">
-            <Link href="/today">
-              <Button className="flex items-center gap-2 px-5 text-xs font-semibold">
-                <Play className="h-3.5 w-3.5 fill-current" />
-                <span>Start Session</span>
-              </Button>
-            </Link>
-            <Link href="/planner">
-              <Button variant="secondary" className="text-xs">
-                Reschedule gently
-              </Button>
-            </Link>
-          </div>
+              <div className="pt-2 flex flex-wrap items-center gap-3">
+                <Link href="/today">
+                  <Button className="flex items-center gap-2 px-5 text-xs font-semibold">
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                    <span>Start Session</span>
+                  </Button>
+                </Link>
+                <Link href="/planner">
+                  <Button variant="secondary" className="text-xs">
+                    Reschedule gently
+                  </Button>
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="space-y-1">
+                <h2 className="text-xl sm:text-2xl font-bold text-stone-900 leading-snug">
+                  {plannedTasks.length > 0 && completedTasks.length === plannedTasks.length
+                    ? "All tasks completed for today! Great work."
+                    : "No focus tasks scheduled for today."}
+                </h2>
+                <p className="text-xs text-stone-500">
+                  {plannedTasks.length > 0 && completedTasks.length === plannedTasks.length
+                    ? "You have completed all planned tasks. Relax or prepare for tomorrow."
+                    : "Use the Guided Goal Wizard to create a roadmap or add tasks to your schedule."}
+                </p>
+              </div>
+
+              <div className="pt-2 flex flex-wrap items-center gap-3">
+                <Link href="/goals">
+                  <Button className="flex items-center gap-2 px-5 text-xs font-semibold">
+                    <Target className="h-3.5 w-3.5" />
+                    <span>Create a Goal</span>
+                  </Button>
+                </Link>
+                <Link href="/today">
+                  <Button variant="secondary" className="text-xs">
+                    Add Task to Today
+                  </Button>
+                </Link>
+              </div>
+            </>
+          )}
         </CardBody>
       </Card>
 
@@ -178,23 +208,38 @@ export default function DashboardPage() {
             {goalsLoading ? (
               <Skeleton className="h-8 w-full" />
             ) : (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-stone-900 truncate">
-                    {primaryGoal?.title || "Build my portfolio"}
-                  </span>
-                  <span className="font-semibold text-[#2D5A43]">{primaryGoalProgress}%</span>
+              primaryGoal ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-stone-900 truncate">
+                      {primaryGoal.title}
+                    </span>
+                    <span className="font-semibold text-[#2D5A43]">{primaryGoalProgress}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-[#E7E5E0] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-[#2D5A43] rounded-full transition-all duration-500"
+                      style={{ width: `${primaryGoalProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-stone-500">
+                    Target: <span className="font-medium text-stone-700">{primaryGoal.targetDate || "Ongoing"}</span>
+                  </p>
                 </div>
-                <div className="h-2 w-full bg-[#E7E5E0] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#2D5A43] rounded-full transition-all duration-500"
-                    style={{ width: `${primaryGoalProgress}%` }}
-                  />
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-stone-600">No active goals</span>
+                    <span className="text-stone-400">0%</span>
+                  </div>
+                  <div className="h-2 w-full bg-[#E7E5E0] rounded-full overflow-hidden">
+                    <div className="h-full bg-stone-300 rounded-full" style={{ width: "0%" }} />
+                  </div>
+                  <Link href="/goals" className="text-xs text-[#2D5A43] hover:underline font-semibold block">
+                    Define what you want to achieve →
+                  </Link>
                 </div>
-                <p className="text-xs text-stone-500">
-                  Next milestone: <span className="font-medium text-stone-700">Complete project demo</span>
-                </p>
-              </div>
+              )
             )}
           </CardBody>
         </Card>
@@ -316,7 +361,9 @@ export default function DashboardPage() {
             </CardHeader>
             <CardBody className="space-y-3 pt-2">
               <p className="text-xs text-stone-600 leading-relaxed">
-                You have 4 days with planned focus sessions. Wednesday has a 90-minute buffer for catch-up and rest.
+                {plannedTasks.length > 0
+                  ? `You have ${plannedTasks.length} task${plannedTasks.length === 1 ? "" : "s"} scheduled today with built-in transition buffers.`
+                  : "No scheduled focus sessions yet. Add tasks to see your personalized weekly rhythm."}
               </p>
               <Link href="/planner">
                 <Button variant="secondary" size="sm" className="w-full text-xs">

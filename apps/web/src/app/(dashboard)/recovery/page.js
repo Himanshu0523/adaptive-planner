@@ -18,80 +18,14 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardBody, Button, Dialog } from "@/components/ui";
 
-const defaultRecoveryStrategies = [
-  {
-    id: "keep_deadline",
-    title: "Option 1 — Keep the Target Deadline",
-    tagline: "Prioritize critical path and defer non-essential items",
-    feasibility: "Highly Feasible",
-    feasibilityColor: "text-[#2D5A43] bg-[#EAF4EE] border-[#C6DDD1]",
-    whatChanges: [
-      "Non-critical items deferred to the next iteration",
-      "Focus sessions condensed to high-impact requirements",
-      "Daily workload reduced to sustainable focus blocks",
-    ],
-    whatRemainsUnchanged: [
-      "Target completion deadline remains strictly preserved",
-      "Core demonstration criteria intact",
-      "Upcoming commitments untouched",
-    ],
-    tradeoffs: "Some lower-priority polish work will be moved to post-launch.",
-    affectedTasks: [
-      { title: "Secondary review and formatting pass", action: "Deferred to Phase 2", date: "Next Month" },
-      { title: "Core implementation block", action: "Retained on Schedule", date: "This Week" },
-    ],
-  },
-  {
-    id: "extend_deadline",
-    title: "Option 2 — Extend the Deadline Gently",
-    tagline: "Preserve full original scope while moving the target date",
-    feasibility: "Feasible (+4 Days)",
-    feasibilityColor: "text-blue-800 bg-blue-50 border-blue-200",
-    whatChanges: [
-      "Target deadline moved forward by 4 business days",
-      "Workload distributed comfortably over 8 days instead of crunching",
-      "Zero tasks cut or de-scoped",
-    ],
-    whatRemainsUnchanged: [
-      "Complete task list and full scope preserved",
-      "All success criteria met without compromise",
-      "Original task duration estimates maintained",
-    ],
-    tradeoffs: "The goal milestone completes 4 days later than initially scheduled.",
-    affectedTasks: [
-      { title: "Validation test suite expansion", action: "Shifted +3 Days", date: "Next Tuesday" },
-      { title: "Final demo walk-through", action: "Shifted +4 Days", date: "Next Thursday" },
-    ],
-  },
-  {
-    id: "reallocate_time",
-    title: "Option 3 — Reallocate Available Time",
-    tagline: "Utilize upcoming open weekend/evening buffers to stay on schedule",
-    feasibility: "Conditionally Feasible",
-    feasibilityColor: "text-amber-800 bg-amber-50 border-amber-200",
-    whatChanges: [
-      "Adds one 2-hour Saturday morning focus block",
-      "Shifts administrative tasks out of weekday afternoons",
-      "Increases weekly capacity by 3 hours",
-    ],
-    whatRemainsUnchanged: [
-      "Original deadline remains unchanged",
-      "Full scope retained",
-      "Weekday evenings remain protected",
-    ],
-    tradeoffs: "Requires drawing on weekend buffer time.",
-    affectedTasks: [
-      { title: "Complete deep-work implementation block", action: "Scheduled for Saturday 10:00 AM", date: "This Saturday" },
-      { title: "Administrative check-in", action: "Shifted to Friday 4 PM", date: "This Friday" },
-    ],
-  },
-];
+
 
 export default function RecoveryPage() {
   const [selectedStrategyId, setSelectedStrategyId] = useState("keep_deadline");
   const [appliedToast, setAppliedToast] = useState(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [strategies, setStrategies] = useState(defaultRecoveryStrategies);
+  const [strategies, setStrategies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeGoalInfo, setActiveGoalInfo] = useState(null);
 
   useEffect(() => {
@@ -99,12 +33,19 @@ export default function RecoveryPage() {
     fetch("/api/v1/recovery/options")
       .then((res) => res.json())
       .then((data) => {
-        if (active && data?.recoveryStrategies?.length > 0) {
-          setStrategies(data.recoveryStrategies);
-          if (data.activeGoal) setActiveGoalInfo(data.activeGoal);
+        if (active) {
+          if (data?.recoveryStrategies?.length > 0) {
+            setStrategies(data.recoveryStrategies);
+            if (data.activeGoal) setActiveGoalInfo(data.activeGoal);
+          } else {
+            setStrategies([]);
+          }
         }
       })
-      .catch((err) => console.error("Error loading recovery options:", err));
+      .catch((err) => console.error("Error loading recovery options:", err))
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
     return () => {
       active = false;
     };
@@ -192,48 +133,79 @@ export default function RecoveryPage() {
         </div>
       )}
 
-      {/* Context Banner: "Let's adjust the plan" */}
-      <div className="rounded-2xl border border-[#C6DDD1] bg-[#F2F7F4] p-5 space-y-2 shadow-xs">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-[#2D5A43]" />
-          <h3 className="text-sm font-bold text-stone-900">Let&apos;s adjust the plan together</h3>
-        </div>
-        <p className="text-xs text-stone-700 leading-relaxed max-w-3xl">
-          <span className="font-semibold text-[#2D5A43]">Observed Situation:</span> A target milestone is at risk because available focus hours decreased by 4.5 hours this week due to unexpected commitments. Below are 3 deterministic alternatives. You retain total agency over which path to choose.
-        </p>
-      </div>
+      {/* Content: On-Track Clean State or Active Recovery Options */}
+      {strategies.length === 0 ? (
+        <Card className="border-[#C6DDD1] bg-gradient-to-br from-white via-white to-[#F2F7F4] p-8 sm:p-12 text-center space-y-4 shadow-sm rounded-2xl">
+          <div className="h-14 w-14 rounded-2xl bg-[#EAF4EE] text-[#2D5A43] flex items-center justify-center mx-auto shadow-xs">
+            <CheckCircle2 className="h-7 w-7" />
+          </div>
+          <div className="space-y-1.5 max-w-md mx-auto">
+            <h3 className="text-xl font-bold text-stone-900">
+              Your plan is completely on schedule.
+            </h3>
+            <p className="text-xs text-stone-600 leading-relaxed">
+              No schedule deficits, overdue tasks, or congested time blocks detected. When life causes delays or meetings run over, this Recovery Simulator will calculate 3 sustainable alternative paths with transparent trade-offs.
+            </p>
+          </div>
+          <div className="pt-3 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/today">
+              <Button size="sm" className="text-xs">
+                View Today&apos;s Focus Tasks
+              </Button>
+            </Link>
+            <Link href="/planner">
+              <Button variant="outline" size="sm" className="text-xs">
+                Open Schedule Grid
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        <>
+          {/* Context Banner: "Let's adjust the plan" */}
+          <div className="rounded-2xl border border-[#C6DDD1] bg-[#F2F7F4] p-5 space-y-2 shadow-xs">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[#2D5A43]" />
+              <h3 className="text-sm font-bold text-stone-900">Let&apos;s adjust the plan together</h3>
+            </div>
+            <p className="text-xs text-stone-700 leading-relaxed max-w-3xl">
+              <span className="font-semibold text-[#2D5A43]">Observed Situation:</span> Schedule recalibration recommended for {activeGoalInfo?.title || "active goals"}. Below are 3 deterministic alternatives. You retain total agency over which path to choose.
+            </p>
+          </div>
 
-      {/* 3 Alternative Strategy Cards Grid */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {recoveryStrategies.map((strat) => {
-          const isSelected = strat.id === selectedStrategyId;
-          return (
-            <button
-              key={strat.id}
-              type="button"
-              onClick={() => setSelectedStrategyId(strat.id)}
-              className={`p-5 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between space-y-4 ${
-                isSelected
-                  ? "border-[#2D5A43] bg-white ring-2 ring-[#2D5A43]/20 shadow-sm"
-                  : "border-[#E7E5E0] bg-white hover:border-stone-300 hover:bg-[#FAF9F5]"
-              }`}
-            >
-              <div className="space-y-2">
-                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${strat.feasibilityColor}`}>
-                  {strat.feasibility}
-                </span>
-                <h4 className="text-sm font-bold text-stone-900 leading-snug">{strat.title}</h4>
-                <p className="text-xs text-stone-500 leading-relaxed">{strat.tagline}</p>
-              </div>
+          {/* 3 Alternative Strategy Cards Grid */}
+          <div className="grid gap-4 md:grid-cols-3">
+            {strategies.map((strat) => {
+              const isSelected = strat.id === selectedStrategyId;
+              return (
+                <button
+                  key={strat.id}
+                  type="button"
+                  onClick={() => setSelectedStrategyId(strat.id)}
+                  className={`p-5 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between space-y-4 ${
+                    isSelected
+                      ? "border-[#2D5A43] bg-white ring-2 ring-[#2D5A43]/20 shadow-sm"
+                      : "border-[#E7E5E0] bg-white hover:border-stone-300 hover:bg-[#FAF9F5]"
+                  }`}
+                >
+                  <div className="space-y-2">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${strat.feasibilityColor}`}>
+                      {strat.feasibility}
+                    </span>
+                    <h4 className="text-sm font-bold text-stone-900 leading-snug">{strat.title}</h4>
+                    <p className="text-xs text-stone-500 leading-relaxed">{strat.tagline}</p>
+                  </div>
 
-              <div className="pt-2 border-t border-[#E7E5E0]/70 flex items-center justify-between text-xs font-semibold text-[#2D5A43]">
-                <span>{isSelected ? "Currently Selected" : "Select this alternative"}</span>
-                <ArrowRight className={`h-3.5 w-3.5 transition ${isSelected ? "translate-x-1" : ""}`} />
-              </div>
-            </button>
-          );
-        })}
-      </div>
+                  <div className="pt-2 border-t border-[#E7E5E0]/70 flex items-center justify-between text-xs font-semibold text-[#2D5A43]">
+                    <span>{isSelected ? "Currently Selected" : "Select this alternative"}</span>
+                    <ArrowRight className={`h-3.5 w-3.5 transition ${isSelected ? "translate-x-1" : ""}`} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* Detailed Strategy Inspector Card */}
       {selectedStrategy && (

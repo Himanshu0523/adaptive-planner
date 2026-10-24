@@ -33,56 +33,24 @@ function adaptGoalFromBackend(g) {
   };
 }
 
-const initialMockGoals = [
-  {
-    id: "goal-1",
-    title: "Launch MVP Web App",
-    description: "Complete full-stack planner application with modern UI and test coverage.",
-    category: "Product",
-    status: "in_progress",
-    targetDate: "2026-11-15",
-    totalTasks: 5,
-    completedTasks: 3,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "goal-2",
-    title: "Design System Implementation",
-    description: "Build reusable UI components, tokens, typography, and responsive layouts.",
-    category: "Design",
-    status: "completed",
-    targetDate: "2026-10-20",
-    totalTasks: 4,
-    completedTasks: 4,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "goal-3",
-    title: "Adaptive Task Scheduler",
-    description: "Automated task recovery and priority re-allocation engine.",
-    category: "Engineering",
-    status: "draft",
-    targetDate: "2026-12-01",
-    totalTasks: 2,
-    completedTasks: 0,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+const initialMockGoals = [];
 
 function getLocalGoals() {
-  if (typeof window === "undefined") return initialMockGoals;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialMockGoals));
-      return initialMockGoals;
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    // Purge legacy mock goals if present
+    const cleaned = (parsed || []).filter(
+      (g) => g.id !== "goal-1" && g.id !== "goal-2" && g.id !== "goal-3" && g.title !== "Launch MVP Web App"
+    );
+    if (cleaned.length !== parsed.length) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleaned));
     }
-    return JSON.parse(raw);
+    return cleaned;
   } catch {
-    return initialMockGoals;
+    return [];
   }
 }
 

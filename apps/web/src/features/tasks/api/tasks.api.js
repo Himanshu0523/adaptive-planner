@@ -36,64 +36,29 @@ function adaptTaskFromBackend(t) {
   };
 }
 
-const initialMockTasks = [
-  {
-    id: "task-1",
-    goalId: "goal-1",
-    title: "Implement frontend feedback components",
-    notes: "Create skeleton and empty state loaders",
-    status: "done",
-    dueDate: todayStr,
-    estimatedMinutes: 30,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-2",
-    goalId: "goal-1",
-    title: "Connect React Query goals and tasks hooks",
-    notes: "Fix query keys and optimistic mutation updates",
-    status: "in_progress",
-    dueDate: todayStr,
-    estimatedMinutes: 45,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-3",
-    goalId: "goal-1",
-    title: "Validate full production Turbopack build",
-    notes: "Ensure all routes compile and pass linting",
-    status: "todo",
-    dueDate: todayStr,
-    estimatedMinutes: 20,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-4",
-    goalId: "goal-2",
-    title: "Establish responsive sidebar navigation",
-    notes: "Support mobile drawer and desktop layout",
-    status: "done",
-    dueDate: "2026-10-18",
-    estimatedMinutes: 60,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+const initialMockTasks = [];
 
 function getLocalTasks() {
-  if (typeof window === "undefined") return initialMockTasks;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(initialMockTasks));
-      return initialMockTasks;
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    // Purge legacy mock tasks if present
+    const cleaned = (parsed || []).filter(
+      (t) =>
+        t.id !== "task-1" &&
+        t.id !== "task-2" &&
+        t.id !== "task-3" &&
+        t.id !== "task-4" &&
+        t.title !== "Implement frontend feedback components"
+    );
+    if (cleaned.length !== parsed.length) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleaned));
     }
-    return JSON.parse(raw);
+    return cleaned;
   } catch {
-    return initialMockTasks;
+    return [];
   }
 }
 

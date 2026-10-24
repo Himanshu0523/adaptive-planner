@@ -10,6 +10,40 @@ export async function GET(request) {
     const pendingTasks = tasks.filter((t) => t.status !== "done");
     const inProgressTasks = tasks.filter((t) => t.status === "in_progress");
 
+    if (tasks.length === 0) {
+      return NextResponse.json({
+        hasData: false,
+        primaryPatternTitle: "Baseline diagnostics active",
+        observationSummary: "No workload or completed task sessions recorded yet.",
+        observations: [
+          {
+            label: "Completion Ratio",
+            value: "0/0 tasks completed",
+            context: "Awaiting your first task execution",
+          },
+          {
+            label: "Average Task Size",
+            value: "—",
+            context: "Calibrates with completed sessions",
+          },
+          {
+            label: "Active Goals",
+            value: `${goals.length} registered goals`,
+            context: goals.length === 0 ? "No active goals defined yet" : "Goals defined",
+          },
+        ],
+        hypotheses: [
+          {
+            id: "hyp-1",
+            title: "Begin by creating a goal or adding a task to today's schedule to activate continuous diagnostics.",
+            confidence: "Informational",
+            actionableRecommendation: "Use the Guided Goal Wizard to break your vision into bite-sized 30-minute focus blocks.",
+          },
+        ],
+        analyzedAt: new Date().toISOString(),
+      });
+    }
+
     const totalMinutesEstimated = tasks.reduce((acc, t) => acc + (t.estimatedMinutes || 30), 0);
     const avgMinutes = tasks.length > 0 ? Math.round(totalMinutesEstimated / tasks.length) : 35;
 

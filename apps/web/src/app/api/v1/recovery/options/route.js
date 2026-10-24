@@ -7,17 +7,31 @@ export async function GET(request) {
     const tasks = db.getTasks();
 
     const pendingTasks = tasks.filter((t) => t.status !== "done");
+
+    if (pendingTasks.length === 0) {
+      return NextResponse.json({
+        hasDeficit: false,
+        recoveryStrategies: [],
+        activeGoal: goals[0] || null,
+        pendingTasksCount: 0,
+        deficitHours: 0,
+        recommendedExtensionDays: 0,
+        message: "No schedule deficits detected. All tasks are completed or your schedule is clear.",
+        calculatedAt: new Date().toISOString(),
+      });
+    }
+
     const activeGoal = goals.find((g) => g.status === "in_progress") || goals[0] || {
-      title: "Active Milestone",
-      targetDate: "Upcoming Target",
+      title: "Current Goal",
+      targetDate: "Target Date",
     };
 
     const totalPendingMinutes = pendingTasks.reduce((sum, t) => sum + (t.estimatedMinutes || 30), 0);
     const deficitHours = Math.round((totalPendingMinutes / 60) * 10) / 10;
     const recommendedExtensionDays = Math.max(Math.ceil(totalPendingMinutes / 90), 2);
 
-    const task1 = pendingTasks[0] || { title: "Primary execution block", dueDate: "Today" };
-    const task2 = pendingTasks[1] || { title: "Validation & verification session", dueDate: "Tomorrow" };
+    const task1 = pendingTasks[0];
+    const task2 = pendingTasks[1] || pendingTasks[0];
 
     const recoveryStrategies = [
       {

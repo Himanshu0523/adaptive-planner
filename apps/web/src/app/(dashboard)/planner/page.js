@@ -61,17 +61,7 @@ export default function PlannerPage() {
     };
   }, [tasks]);
 
-  const proposedSchedule = scheduleData.length > 0 ? scheduleData : [
-    {
-      taskId: "default-1",
-      title: "Optimized daily deep-work session",
-      originalSlot: "10:00 AM (45m)",
-      proposedSlot: "10:00 – 10:35 AM",
-      durationChange: "45m → 35m (-10m)",
-      feasibility: "On Schedule",
-      scope: "Unchanged",
-    },
-  ];
+  const proposedSchedule = scheduleData;
 
   const queryClient = useQueryClient();
   const [isApplying, setIsApplying] = useState(false);
@@ -307,79 +297,100 @@ export default function PlannerPage() {
         description="Review the simulated consequences before applying. Nothing changes until you approve."
         maxWidth="max-w-2xl"
       >
-        <div className="space-y-5">
-          <div className="rounded-xl border border-[#E7E5E0] bg-[#FAF9F5] p-3 text-xs text-stone-600 space-y-1">
-            <span className="font-semibold text-stone-900 block">Simulation Summary:</span>
-            <p>
-              • Original time slots vs Proposed slots: 1 task deferred to tomorrow; 2 tasks allocated 10–15m safety buffers.
-            </p>
-            <p>
-              • Feasibility: Target milestone remains 100% on schedule for next week.
-            </p>
+        {proposedSchedule.length === 0 ? (
+          <div className="py-8 text-center space-y-3">
+            <div className="h-10 w-10 rounded-xl bg-[#EAF4EE] text-[#2D5A43] flex items-center justify-center mx-auto">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div className="space-y-1 max-w-sm mx-auto">
+              <p className="text-sm font-semibold text-stone-900">
+                No active tasks to optimize.
+              </p>
+              <p className="text-xs text-stone-500">
+                Add tasks to today&apos;s plan or create a goal to simulate 15% focus compression buffers and avoid congestion.
+              </p>
+            </div>
+            <div className="pt-2">
+              <Button size="sm" onClick={() => setIsPreviewOpen(false)} className="text-xs">
+                Back to Schedule
+              </Button>
+            </div>
           </div>
+        ) : (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-[#E7E5E0] bg-[#FAF9F5] p-3 text-xs text-stone-600 space-y-1">
+              <span className="font-semibold text-stone-900 block">Simulation Summary:</span>
+              <p>
+                • {proposedSchedule.length} active tasks recalibrated with 15% focus compression buffers and transition pauses.
+              </p>
+              <p>
+                • Feasibility: Target milestones protected from cognitive congestion.
+              </p>
+            </div>
 
-          {/* Comparison Table */}
-          <div className="border border-[#E7E5E0] rounded-xl overflow-hidden">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-[#FAF9F5] border-b border-[#E7E5E0] text-stone-500 font-semibold">
-                <tr>
-                  <th className="p-3">Task Title</th>
-                  <th className="p-3">Existing Slot</th>
-                  <th className="p-3">Proposed Slot</th>
-                  <th className="p-3">Status Impact</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E7E5E0]">
-                {proposedSchedule.map((item) => (
-                  <tr key={item.taskId} className="hover:bg-stone-50">
-                    <td className="p-3 font-semibold text-stone-900 max-w-[200px] truncate">
-                      {item.title}
-                    </td>
-                    <td className="p-3 text-stone-500 line-through">{item.originalSlot}</td>
-                    <td className="p-3 font-medium text-[#2D5A43]">{item.proposedSlot}</td>
-                    <td className="p-3">
-                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#EAF4EE] text-[#2D5A43]">
-                        {item.feasibility}
-                      </span>
-                    </td>
+            {/* Comparison Table */}
+            <div className="border border-[#E7E5E0] rounded-xl overflow-hidden">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-[#FAF9F5] border-b border-[#E7E5E0] text-stone-500 font-semibold">
+                  <tr>
+                    <th className="p-3">Task Title</th>
+                    <th className="p-3">Existing Slot</th>
+                    <th className="p-3">Proposed Slot</th>
+                    <th className="p-3">Status Impact</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[#E7E5E0]">
+                  {proposedSchedule.map((item) => (
+                    <tr key={item.taskId} className="hover:bg-stone-50">
+                      <td className="p-3 font-semibold text-stone-900 max-w-[200px] truncate">
+                        {item.title}
+                      </td>
+                      <td className="p-3 text-stone-500 line-through">{item.originalSlot}</td>
+                      <td className="p-3 font-medium text-[#2D5A43]">{item.proposedSlot}</td>
+                      <td className="p-3">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#EAF4EE] text-[#2D5A43]">
+                          {item.feasibility}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          {/* Action Footer */}
-          <div className="flex items-center justify-between pt-3 border-t border-[#E7E5E0]">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsPreviewOpen(false)}
-              className="text-xs"
-            >
-              Keep Existing Plan
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={isApplying}
-              onClick={handleApplyProposedSchedule}
-              className="text-xs flex items-center gap-1.5 bg-[#2D5A43] hover:bg-[#1E3A2F]"
-            >
-              {isApplying ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Applying...</span>
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4" />
-                  <span>Apply Proposed Schedule</span>
-                </>
-              )}
-            </Button>
+            {/* Action Footer */}
+            <div className="flex items-center justify-between pt-3 border-t border-[#E7E5E0]">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsPreviewOpen(false)}
+                className="text-xs"
+              >
+                Keep Existing Plan
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={isApplying}
+                onClick={handleApplyProposedSchedule}
+                className="text-xs flex items-center gap-1.5 bg-[#2D5A43] hover:bg-[#1E3A2F]"
+              >
+                {isApplying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Applying...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    <span>Apply Proposed Schedule</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </Dialog>
     </div>
   );

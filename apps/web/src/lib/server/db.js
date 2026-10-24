@@ -17,79 +17,10 @@ let users = [
   },
 ];
 
-let goals = [
-  {
-    id: "goal-1",
-    title: "Launch MVP Web App",
-    description: "Complete full-stack planner application with modern UI and test coverage.",
-    category: "Product",
-    status: "in_progress",
-    targetDate: "2026-11-15",
-    totalTasks: 3,
-    completedTasks: 1,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "goal-2",
-    title: "Design System Implementation",
-    description: "Build reusable UI components, tokens, typography, and responsive layouts.",
-    category: "Design",
-    status: "completed",
-    targetDate: "2026-10-20",
-    totalTasks: 1,
-    completedTasks: 1,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+let goals = [];
 
-let tasks = [
-  {
-    id: "task-1",
-    goalId: "goal-1",
-    title: "Implement frontend feedback components",
-    notes: "Create skeleton and empty state loaders",
-    status: "done",
-    dueDate: todayStr,
-    estimatedMinutes: 30,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-2",
-    goalId: "goal-1",
-    title: "Connect React Query goals and tasks hooks",
-    notes: "Fix query keys and optimistic mutation updates",
-    status: "in_progress",
-    dueDate: todayStr,
-    estimatedMinutes: 45,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-3",
-    goalId: "goal-1",
-    title: "Validate full production Turbopack build",
-    notes: "Ensure all routes compile and pass linting",
-    status: "todo",
-    dueDate: todayStr,
-    estimatedMinutes: 20,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "task-4",
-    goalId: "goal-2",
-    title: "Establish responsive sidebar navigation",
-    notes: "Support mobile drawer and desktop layout",
-    status: "done",
-    dueDate: "2026-10-18",
-    estimatedMinutes: 60,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+let tasks = [];
+
 
 export const db = {
   // Goals

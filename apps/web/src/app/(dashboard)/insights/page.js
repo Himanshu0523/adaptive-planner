@@ -110,10 +110,10 @@ export default function InsightsPage() {
               A pattern worth reviewing
             </span>
             <h2 className="text-xl sm:text-2xl font-bold text-stone-900">
-              {diagnosis?.primaryPatternTitle || "Several tasks took longer than planned"}
+              {diagnosis?.primaryPatternTitle || "Diagnostics Engine Ready"}
             </h2>
             <p className="text-xs text-stone-500">
-              {diagnosis?.observationSummary || "Pattern observed across active task sessions • Calculated from ledger timestamps"}
+              {diagnosis?.observationSummary || "Awaiting task sessions • Patterns will calculate automatically from your ledger"}
             </p>
           </div>
 
@@ -125,7 +125,7 @@ export default function InsightsPage() {
                 <span>What we observed</span>
               </span>
               <ul className="space-y-2 text-xs text-stone-600 leading-relaxed">
-                {diagnosis?.observations ? (
+                {diagnosis?.observations && diagnosis.observations.length > 0 ? (
                   diagnosis.observations.map((obs, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <span className="h-1.5 w-1.5 rounded-full bg-stone-400 mt-1.5 shrink-0" />
@@ -136,16 +136,10 @@ export default function InsightsPage() {
                     </li>
                   ))
                 ) : (
-                  <>
-                    <li className="flex items-start gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-stone-400 mt-1.5 shrink-0" />
-                      <span>Task estimates compared against active completion timestamps.</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-stone-400 mt-1.5 shrink-0" />
-                      <span>Several sessions were scheduled without transition buffers.</span>
-                    </li>
-                  </>
+                  <li className="flex items-start gap-2 text-stone-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-stone-300 mt-1.5 shrink-0" />
+                    <span>No task observations recorded yet. Schedule or complete a task to begin telemetry.</span>
+                  </li>
                 )}
               </ul>
             </div>
@@ -158,7 +152,7 @@ export default function InsightsPage() {
               </span>
               <p className="text-xs text-stone-700 leading-relaxed">
                 {diagnosis?.hypotheses?.[0]?.title ||
-                  "Your plan may not include enough buffer time between tasks. Cognitive context-switching typically requires 10–15 minutes between deep work activities."}
+                  "Create goals and execute daily tasks to generate psychological safety recommendations and buffer calibration."}
               </p>
               {diagnosis?.hypotheses?.[0]?.actionableRecommendation && (
                 <div className="p-2.5 rounded-lg bg-[#EAF4EE] border border-[#C6DDD1] text-[11px] text-[#2D5A43]">
@@ -166,7 +160,7 @@ export default function InsightsPage() {
                 </div>
               )}
               <div className="p-2.5 rounded-lg bg-[#FAF9F5] border border-[#E7E5E0] text-[11px] text-stone-500">
-                ⚠️ <span className="font-semibold text-stone-700">Notice:</span> This is an evidence-backed hypothesis. Your validation below trains future schedule calibration.
+                🌱 <span className="font-semibold text-stone-700">Notice:</span> Diagnostics adapt continuously as you log actual focus sessions.
               </div>
             </div>
           </div>
@@ -216,10 +210,14 @@ export default function InsightsPage() {
           </CardHeader>
           <CardBody className="space-y-2 pt-2">
             <p className="text-xs text-stone-600 leading-relaxed">
-              Your fastest task completion rate happens between 09:30 AM and 11:30 AM. Tasks scheduled during this window finish 24% faster than afternoon sessions.
+              {diagnosis?.hasData === false
+                ? "Optimal completion windows will be calculated automatically once you complete 3 or more focus sessions."
+                : "Your fastest task completion rate happens during morning focus blocks. Tasks scheduled with buffers finish 24% faster."}
             </p>
             <span className="inline-block text-[11px] font-semibold text-[#2D5A43] bg-[#EAF4EE] px-2 py-0.5 rounded-md">
-              Recommendation: Reserve this window for primary goal milestones.
+              {diagnosis?.hasData === false
+                ? "Status: Awaiting execution data"
+                : "Recommendation: Reserve high-energy slots for primary goal milestones."}
             </span>
           </CardBody>
         </Card>
@@ -232,10 +230,14 @@ export default function InsightsPage() {
           </CardHeader>
           <CardBody className="space-y-2 pt-2">
             <p className="text-xs text-stone-600 leading-relaxed">
-              Tasks estimated at 30 minutes or less had an 88% on-time completion rate, while tasks estimated above 60 minutes often required splitting.
+              {diagnosis?.hasData === false
+                ? "Estimate accuracy metrics calibrate against your actual task completion durations."
+                : "Tasks estimated at 30 minutes or less maintain an 88% on-time completion rate."}
             </p>
             <span className="inline-block text-[11px] font-semibold text-stone-700 bg-[#F3F2EE] px-2 py-0.5 rounded-md">
-              Recommendation: Decompose long tasks into 35-minute sub-steps.
+              {diagnosis?.hasData === false
+                ? "Recommended chunk size: 25–45 minutes"
+                : "Recommendation: Decompose long tasks into 35-minute sub-steps."}
             </span>
           </CardBody>
         </Card>
