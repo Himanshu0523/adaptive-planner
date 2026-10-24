@@ -12,7 +12,7 @@
 [![BullMQ](https://img.shields.io/badge/BullMQ-5.0-orange.svg)](https://bullmq.io/)
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Himanshu0523/adaptive-planner&root-directory=apps/web)
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/Himanshu0523/adaptive-planner)
+
 
 ### 🌐 Live Production Deployments
 - **Vercel (Primary):** [https://planner-app-liart.vercel.app](https://planner-app-liart.vercel.app/)
