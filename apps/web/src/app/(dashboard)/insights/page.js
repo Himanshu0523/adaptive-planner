@@ -210,14 +210,14 @@ export default function InsightsPage() {
           </CardHeader>
           <CardBody className="space-y-2 pt-2">
             <p className="text-xs text-stone-600 leading-relaxed">
-              {diagnosis?.hasData === false
-                ? "Optimal completion windows will be calculated automatically once you complete 3 or more focus sessions."
-                : "Your fastest task completion rate happens during morning focus blocks. Tasks scheduled with buffers finish 24% faster."}
+              {diagnosis?.hasData
+                ? "Your fastest task completion rate happens during morning focus blocks. Tasks scheduled with buffers finish reliably."
+                : "Optimal completion windows will be calculated automatically once you complete 3 or more focus sessions."}
             </p>
             <span className="inline-block text-[11px] font-semibold text-[#2D5A43] bg-[#EAF4EE] px-2 py-0.5 rounded-md">
-              {diagnosis?.hasData === false
-                ? "Status: Awaiting execution data"
-                : "Recommendation: Reserve high-energy slots for primary goal milestones."}
+              {diagnosis?.hasData
+                ? "Recommendation: Reserve high-energy slots for primary goal milestones."
+                : "Status: Awaiting execution data"}
             </span>
           </CardBody>
         </Card>
@@ -230,14 +230,14 @@ export default function InsightsPage() {
           </CardHeader>
           <CardBody className="space-y-2 pt-2">
             <p className="text-xs text-stone-600 leading-relaxed">
-              {diagnosis?.hasData === false
-                ? "Estimate accuracy metrics calibrate against your actual task completion durations."
-                : "Tasks estimated at 30 minutes or less maintain an 88% on-time completion rate."}
+              {diagnosis?.hasData
+                ? "Task estimate accuracy calibrates against your actual completion durations."
+                : "Estimate accuracy metrics calibrate against your actual task completion durations."}
             </p>
             <span className="inline-block text-[11px] font-semibold text-stone-700 bg-[#F3F2EE] px-2 py-0.5 rounded-md">
-              {diagnosis?.hasData === false
-                ? "Recommended chunk size: 25–45 minutes"
-                : "Recommendation: Decompose long tasks into 35-minute sub-steps."}
+              {diagnosis?.hasData
+                ? "Recommendation: Keep chunk sizes between 25–45 minutes."
+                : "Recommended chunk size: 25–45 minutes"}
             </span>
           </CardBody>
         </Card>

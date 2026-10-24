@@ -133,8 +133,13 @@ export default function RecoveryPage() {
         </div>
       )}
 
-      {/* Content: On-Track Clean State or Active Recovery Options */}
-      {strategies.length === 0 ? (
+      {/* Content: Loading, On-Track Clean State or Active Recovery Options */}
+      {isLoading ? (
+        <Card className="p-12 text-center flex flex-col items-center justify-center space-y-3">
+          <Loader2 className="h-6 w-6 animate-spin text-[#2D5A43]" />
+          <p className="text-xs text-stone-500">Analyzing schedule trajectory and recovery buffers...</p>
+        </Card>
+      ) : strategies.length === 0 ? (
         <Card className="border-[#C6DDD1] bg-gradient-to-br from-white via-white to-[#F2F7F4] p-8 sm:p-12 text-center space-y-4 shadow-sm rounded-2xl">
           <div className="h-14 w-14 rounded-2xl bg-[#EAF4EE] text-[#2D5A43] flex items-center justify-center mx-auto shadow-xs">
             <CheckCircle2 className="h-7 w-7" />
@@ -208,7 +213,7 @@ export default function RecoveryPage() {
       )}
 
       {/* Detailed Strategy Inspector Card */}
-      {selectedStrategy && (
+      {!isLoading && selectedStrategy && (
         <Card className="border-[#2D5A43]/30 shadow-sm">
           <CardHeader className="border-b border-[#E7E5E0] pb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -240,7 +245,7 @@ export default function RecoveryPage() {
                   What will change:
                 </span>
                 <ul className="space-y-1.5 text-xs text-stone-600">
-                  {selectedStrategy.whatChanges.map((item, idx) => (
+                  {selectedStrategy.whatChanges?.map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <span className="h-1.5 w-1.5 rounded-full bg-[#2D5A43] mt-1.5 shrink-0" />
                       <span>{item}</span>
@@ -255,7 +260,7 @@ export default function RecoveryPage() {
                   What remains unchanged:
                 </span>
                 <ul className="space-y-1.5 text-xs text-stone-600">
-                  {selectedStrategy.whatRemainsUnchanged.map((item, idx) => (
+                  {selectedStrategy.whatRemainsUnchanged?.map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <span className="h-1.5 w-1.5 rounded-full bg-stone-400 mt-1.5 shrink-0" />
                       <span>{item}</span>
@@ -275,24 +280,26 @@ export default function RecoveryPage() {
             </div>
 
             {/* Preview of Affected Tasks */}
-            <div className="space-y-2.5">
-              <span className="text-xs font-bold text-stone-900 block">
-                Preview of Affected Tasks & Dates:
-              </span>
-              <div className="border border-[#E7E5E0] rounded-xl overflow-hidden divide-y divide-[#E7E5E0]">
-                {selectedStrategy.affectedTasks.map((t, idx) => (
-                  <div key={idx} className="p-3.5 bg-white flex items-center justify-between text-xs gap-3">
-                    <span className="font-semibold text-stone-900 truncate">{t.title}</span>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-stone-500">{t.date}</span>
-                      <span className="px-2 py-0.5 rounded-md font-medium text-[11px] bg-[#EAF4EE] text-[#2D5A43]">
-                        {t.action}
-                      </span>
+            {selectedStrategy.affectedTasks?.length > 0 && (
+              <div className="space-y-2.5">
+                <span className="text-xs font-bold text-stone-900 block">
+                  Preview of Affected Tasks & Dates:
+                </span>
+                <div className="border border-[#E7E5E0] rounded-xl overflow-hidden divide-y divide-[#E7E5E0]">
+                  {selectedStrategy.affectedTasks.map((t, idx) => (
+                    <div key={idx} className="p-3.5 bg-white flex items-center justify-between text-xs gap-3">
+                      <span className="font-semibold text-stone-900 truncate">{t.title}</span>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-stone-500">{t.date}</span>
+                        <span className="px-2 py-0.5 rounded-md font-medium text-[11px] bg-[#EAF4EE] text-[#2D5A43]">
+                          {t.action}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </CardBody>
         </Card>
       )}

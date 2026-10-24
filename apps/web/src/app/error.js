@@ -16,9 +16,9 @@ export default function GlobalError({ error, reset }) {
           <span>⚠️</span>
         </div>
         
-        <h2 className="text-xl font-bold text-white">Application Exception</h2>
+        <h2 className="text-xl font-bold text-white">Something went wrong</h2>
         <p className="mt-2 text-sm text-[#7e8b9b]">
-          A component crashed while streaming real-time metric assets.
+          An unexpected error occurred while rendering this view.
         </p>
 
         <div className="mt-6 flex gap-3 justify-center">
