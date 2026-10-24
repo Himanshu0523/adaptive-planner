@@ -16,7 +16,7 @@
 
 ### 🌐 Live Production Deployments
 - **Vercel (Primary):** [https://planner-app-liart.vercel.app](https://planner-app-liart.vercel.app/)
-- **Netlify (Mirror):** [https://personalplannerapp.netlify.app](https://personalplannerapp.netlify.app/)
+<!-- - **Netlify (Mirror):** [https://personalplannerapp.netlify.app](https://personalplannerapp.netlify.app/) -->
 
 > **Demo Login:** `demo@adaptiveplanner.io` / `password123` (or register any new account)
 
