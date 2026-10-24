@@ -11,6 +11,9 @@
 [![Prisma](https://img.shields.io/badge/Prisma-7.1-2D3748.svg)](https://www.prisma.io/)
 [![BullMQ](https://img.shields.io/badge/BullMQ-5.0-orange.svg)](https://bullmq.io/)
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Himanshu0523/adaptive-planner&root-directory=apps/web)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/Himanshu0523/adaptive-planner)
+
 ---
 
 ## 🎯 What Makes Adaptive Planner Different?
