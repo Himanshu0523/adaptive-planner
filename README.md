@@ -121,14 +121,6 @@ pnpm build:all
 
 ---
 
-## 🔑 Default Test Credentials
-
-| Access Type | Email | Password |
-| :--- | :--- | :--- |
-| **Email Sign In** | `demo@adaptiveplanner.io` | `password123` |
-| **Instant Guest** | Click **"Instant Demo / Guest Access"** on `/login` | *No password required* |
-
----
 
 ## 📄 License
 
