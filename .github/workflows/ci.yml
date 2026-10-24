@@ -17,12 +17,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Get pnpm store directory
         shell: bash
@@ -40,8 +38,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma Client
+        run: pnpm db:generate
+
       - name: Run unit & integration tests
         run: pnpm test
 
       - name: Build all packages and applications
         run: pnpm build:all
+
