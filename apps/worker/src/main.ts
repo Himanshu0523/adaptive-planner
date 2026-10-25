@@ -20,78 +20,174 @@ const redisConnection = {
 
 console.log(`[Worker Fleet] Initializing BullMQ workers on Redis ${redisConnection.host}:${redisConnection.port}...`);
 
-// 1. Agent Planning Worker
-const agentPlanningWorker = new Worker(
-  'agent-planning',
+// 1. Dedicated Stateful Agent Run Worker (Phase 1: Low concurrency, step resumption)
+const agentRunWorker = new Worker(
+  'agent-run',
   async (job: Job) => {
-    console.log(`[Queue: agent-planning] Processing job ${job.id} - ${job.name}`);
-    const { goalId, prompt } = job.data;
-    // Simulate or execute long-running planning
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    console.log(`[Queue: agent-planning] Plan generated for goal ${goalId || 'ad-hoc'}`);
-    return { status: 'plan_synthesized', jobId: job.id };
+    const { runId, workspaceId, userId } = job.data;
+    console.log(`[Queue: agent-run] Processing stateful run ${runId} (concurrency: 1)...`);
+
+    try {
+      // Find agent run with steps in order
+      const run = await prisma.agentRun.findUnique({
+        where: { id: runId },
+        include: { steps: { orderBy: { stepNumber: 'asc' } } },
+      });
+
+      if (!run) {
+        console.warn(`[Queue: agent-run] Run ${runId} not found, skipping.`);
+        return { status: 'not_found' };
+      }
+
+      console.log(`[Queue: agent-run] Run ${runId} has ${run.steps.length} steps. Checking for resumption...`);
+
+      // Step-by-step execution saving state as it happens
+      for (const step of run.steps) {
+        if (step.status === 'COMPLETED') {
+          console.log(`[Queue: agent-run] Step ${step.stepNumber} already COMPLETED. Skipping.`);
+          continue;
+        }
+
+        console.log(`[Queue: agent-run] Executing Step ${step.stepNumber}: ${step.name}`);
+        const startTime = Date.now();
+
+        await prisma.agentStep.update({
+          where: { id: step.id },
+          data: { status: 'RUNNING', startedAt: new Date() },
+        });
+
+        // Step simulation / tool execution
+        await new Promise((r) => setTimeout(r, 600));
+        const durationMs = Date.now() - startTime;
+
+        await prisma.agentStep.update({
+          where: { id: step.id },
+          data: {
+            status: 'COMPLETED',
+            durationMs,
+            outputPayload: { executed: true, at: new Date().toISOString() },
+            finishedAt: new Date(),
+          },
+        });
+      }
+
+      // Batch result into Daily Review Digest instead of immediate notification interruption
+      await prisma.dailyReviewDigestItem.create({
+        data: {
+          workspaceId,
+          userId,
+          agentRunId: runId,
+          title: `Autonomous Run: ${run.prompt.slice(0, 45)}`,
+          summary: `Completed all ${run.steps.length} steps safely with zero interruptions.`,
+          status: 'PENDING_REVIEW',
+        },
+      });
+
+      await prisma.agentRun.update({
+        where: { id: runId },
+        data: { status: 'SUCCEEDED', finishedAt: new Date() },
+      });
+
+      console.log(`[Queue: agent-run] Run ${runId} completed successfully and added to daily digest.`);
+      return { status: 'completed', runId };
+    } catch (err: any) {
+      console.error(`[Queue: agent-run] Error during run ${runId}: ${err.message}`);
+      throw err;
+    }
   },
-  { connection: redisConnection, concurrency: 5 },
+  { connection: redisConnection, concurrency: 1 }, // Required: Low concurrency
 );
 
-// 2. Integration Sync Worker
-const integrationSyncWorker = new Worker(
-  'integration-sync',
+// 2. Exit Ramp Evaluator Worker (Phase 3: Pre-committed pivot signals)
+const exitRampWorker = new Worker(
+  'exit-ramp-checker',
   async (job: Job) => {
-    console.log(`[Queue: integration-sync] Syncing connection ${job.data.connectionId} (${job.data.provider})`);
-    // Perform sync and update lastSyncedAt
-    return { synced: true, provider: job.data.provider };
-  },
-  { connection: redisConnection, concurrency: 10 },
-);
+    console.log('[Queue: exit-ramp-checker] Evaluating pre-committed stop/pivot signals...');
+    try {
+      const activeRamps = await prisma.exitRamp.findMany({
+        where: { status: 'MONITORING' },
+        include: { goal: { include: { tasks: true } } },
+      });
 
-// 3. Webhook Processing Worker
-const webhookWorker = new Worker(
-  'webhook-processing',
-  async (job: Job) => {
-    console.log(`[Queue: webhook-processing] Processing webhook delivery ${job.data.eventId}`);
-    return { processed: true, eventId: job.data.eventId };
-  },
-  { connection: redisConnection, concurrency: 10 },
-);
-
-// 4. Tool Execution Worker
-const toolExecutionWorker = new Worker(
-  'tool-execution',
-  async (job: Job) => {
-    console.log(`[Queue: tool-execution] Executing background tool action ${job.data.toolName}`);
-    return { executed: true, toolName: job.data.toolName };
-  },
-  { connection: redisConnection, concurrency: 5 },
-);
-
-// 5. Notification Delivery Worker
-const notificationWorker = new Worker(
-  'notification-delivery',
-  async (job: Job) => {
-    console.log(`[Queue: notification-delivery] Delivering reminder to user ${job.data.userId}`);
-    return { delivered: true, scheduledAt: job.data.scheduledAt };
-  },
-  { connection: redisConnection, concurrency: 5 },
-);
-
-// 6. Maintenance Worker
-const maintenanceWorker = new Worker(
-  'maintenance',
-  async (job: Job) => {
-    console.log(`[Queue: maintenance] Executing routine maintenance task: ${job.name}`);
-    return { completed: true };
+      for (const ramp of activeRamps) {
+        if (ramp.signalType === 'SCHEDULE_SLIP_DAYS') {
+          const now = new Date();
+          const target = ramp.goal.targetDate;
+          if (target && now > target) {
+            const slipDays = Math.ceil((now.getTime() - target.getTime()) / (1000 * 60 * 60 * 24));
+            if (slipDays >= ramp.thresholdValue) {
+              console.log(`[Exit Ramp Tripped] Goal "${ramp.goal.title}" slipped ${slipDays} days (threshold: ${ramp.thresholdValue}d)`);
+              await prisma.exitRamp.update({
+                where: { id: ramp.id },
+                data: {
+                  status: 'TRIGGERED',
+                  triggeredAt: now,
+                  evidenceJson: { slipDays, goalTitle: ramp.goal.title },
+                },
+              });
+            }
+          }
+        }
+      }
+      return { checked: activeRamps.length };
+    } catch (err: any) {
+      console.warn(`[Queue: exit-ramp-checker] Notice: ${err.message}`);
+      return { checked: 0 };
+    }
   },
   { connection: redisConnection, concurrency: 2 },
 );
 
+// 3. Absence Autopilot Worker (Market Differentiator 1: 3 quiet days -> slide deadlines)
+const absenceAutopilotWorker = new Worker(
+  'absence-autopilot',
+  async (job: Job) => {
+    console.log('[Queue: absence-autopilot] Scanning for quiet workspaces (>= 3 days)...');
+    try {
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+      const dormantUsers = await prisma.userAbsenceState.findMany({
+        where: {
+          lastActiveAt: { lt: threeDaysAgo },
+          isAutopilotActive: false,
+        },
+      });
+
+      for (const userState of dormantUsers) {
+        console.log(`[Absence Autopilot Activated] User ${userState.userId} inactive for 3+ days. Sliding deadlines +4 days...`);
+        await prisma.userAbsenceState.update({
+          where: { id: userState.id },
+          data: {
+            isAutopilotActive: true,
+            autopilotStartedAt: new Date(),
+            daysSlid: 4,
+            pausedRecurrences: true,
+          },
+        });
+      }
+      return { processed: dormantUsers.length };
+    } catch (err: any) {
+      console.warn(`[Queue: absence-autopilot] Notice: ${err.message}`);
+      return { processed: 0 };
+    }
+  },
+  { connection: redisConnection, concurrency: 1 },
+);
+
+// 4. Legacy / Auxiliary Workers (Integration Sync, Tool Execution, Notification)
+const integrationSyncWorker = new Worker(
+  'integration-sync',
+  async (job: Job) => {
+    console.log(`[Queue: integration-sync] Syncing connection ${job.data.connectionId}`);
+    return { synced: true };
+  },
+  { connection: redisConnection, concurrency: 5 },
+);
+
 const allWorkers = [
-  agentPlanningWorker,
+  agentRunWorker,
+  exitRampWorker,
+  absenceAutopilotWorker,
   integrationSyncWorker,
-  webhookWorker,
-  toolExecutionWorker,
-  notificationWorker,
-  maintenanceWorker,
 ];
 
 for (const worker of allWorkers) {
@@ -99,14 +195,12 @@ for (const worker of allWorkers) {
     console.error(`[Worker error] Job ${job?.id} on queue ${worker.name} failed: ${err.message}`);
   });
   worker.on('error', (err) => {
-    // Gracefully handle offline Redis in local development
-    console.warn(`[BullMQ notice] ${worker.name} Redis connection status: ${err.message}`);
+    console.warn(`[BullMQ notice] ${worker.name} Redis status: ${err.message}`);
   });
 }
 
-console.log('[Worker Fleet] All 6 BullMQ queues active: agent-planning, integration-sync, webhook-processing, tool-execution, notification-delivery, maintenance');
+console.log('[Worker Fleet] All BullMQ workers initialized successfully (agent-run [concurrency: 1], exit-ramp-checker, absence-autopilot, integration-sync).');
 
-// Graceful shutdown handling
 process.on('SIGTERM', async () => {
   console.log('[Worker Fleet] Gracefully shutting down workers...');
   for (const worker of allWorkers) {

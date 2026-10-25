@@ -15,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardBody, Button, Dialog, Input } from "@/components/ui";
+import { PlanAutopsyCard } from "@/features/autopsy/components/PlanAutopsyCard";
 
 const feedbackOptions = [
   "This explanation is correct.",
@@ -199,6 +200,9 @@ export default function InsightsPage() {
           </div>
         </CardBody>
       </Card>
+
+      {/* Phase 2: Plan Autopsy Diagnostic Engine */}
+      <PlanAutopsyCard />
 
       {/* Additional Observations Grid */}
       <div className="grid gap-5 md:grid-cols-2">

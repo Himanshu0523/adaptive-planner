@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { User, Bell, Sliders, RotateCcw, Check, Calendar, Globe, Shield } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardBody, Button, Input } from "@/components/ui";
 import { useAuthStore } from "@/features/auth/stores/auth-store";
@@ -187,6 +188,36 @@ export default function SettingsPage() {
                 </div>
               </label>
             ))}
+          </CardBody>
+        </Card>
+
+        {/* Phase 5: Agent Trust Ledger Card */}
+        <Card className="border-[#C6DDD1] bg-[#FAF9F5]">
+          <CardHeader className="flex items-center justify-between border-b border-[#E7E5E0] pb-3">
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-[#2D5A43]" />
+              <CardTitle className="text-sm font-semibold text-stone-900">
+                Agent Trust Ledger & Governance
+              </CardTitle>
+            </div>
+            <Link
+              href="/settings/agents"
+              className="text-xs font-semibold text-[#2D5A43] hover:underline"
+            >
+              Manage Agent Tiers →
+            </Link>
+          </CardHeader>
+          <CardBody className="p-4 space-y-2 text-xs text-stone-600">
+            <p className="leading-relaxed">
+              Every agent starts as <strong>Propose Only</strong>. Once an agent achieves <strong>5 consecutive approvals with no edits</strong>, it earns the right to act and notify you. One single rejection demotes it instantly.
+            </p>
+            <div className="pt-1">
+              <Link href="/settings/agents">
+                <Button type="button" variant="outline" size="sm" className="text-xs">
+                  View Agent Track Records & Approval Streaks
+                </Button>
+              </Link>
+            </div>
           </CardBody>
         </Card>
 

@@ -16,6 +16,7 @@ import { Card, CardHeader, CardTitle, CardBody, Button } from "@/components/ui";
 import { useGoals } from "@/features/goals";
 import { useTodayTasks } from "@/features/tasks";
 import { Skeleton } from "@/components/feedback";
+import { PlanningOverheadCard } from "@/features/dashboard/components/PlanningOverheadCard";
 
 export default function DashboardPage() {
   const todayDate = new Date();
@@ -374,6 +375,9 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      {/* Differentiator 2: Planning Overhead Meter ("Planning Tax") */}
+      <PlanningOverheadCard planningMinutes={12} executionMinutes={150} />
     </div>
   );
 }

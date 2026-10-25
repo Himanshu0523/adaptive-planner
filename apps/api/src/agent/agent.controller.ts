@@ -51,4 +51,19 @@ export class AgentController {
       timestamp: new Date().toISOString(),
     };
   }
+
+  @Post('runs/:id/resume')
+  @ApiOperation({ summary: 'Resume an interrupted agent run from the exact uncompleted step' })
+  @ApiResponse({ status: 200, description: 'Run resumed without re-executing completed steps' })
+  async resumeRun(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUserContext,
+  ) {
+    const run = await this.agentPipeline.resumeRun(id, user);
+    return {
+      success: true,
+      data: run,
+      timestamp: new Date().toISOString(),
+    };
+  }
 }

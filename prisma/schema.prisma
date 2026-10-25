@@ -114,6 +114,8 @@ model Goal {
   versions    GoalVersion[]
   milestones  Milestone[]
   tasks       Task[]
+  exitRamps   ExitRamp[]
+  autopsies   PlanAutopsy[]
 
   @@index([workspaceId, status])
   @@map("goals")
@@ -291,21 +293,25 @@ enum AgentRunStatus {
 }
 
 model AgentRun {
-  id          String         @id @default(uuid())
-  workspaceId String         @map("workspace_id")
-  userId      String         @map("user_id")
-  status      AgentRunStatus @default(QUEUED)
-  model       String
-  prompt      String
-  planSummary String?        @map("plan_summary")
-  startedAt   DateTime?      @map("started_at")
-  finishedAt  DateTime?      @map("finished_at")
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @updatedAt @map("updated_at")
+  id                String         @id @default(uuid())
+  workspaceId       String         @map("workspace_id")
+  userId            String         @map("user_id")
+  status            AgentRunStatus @default(QUEUED)
+  model             String
+  prompt            String
+  planSummary       String?        @map("plan_summary")
+  resumedFromStepId String?        @map("resumed_from_step_id")
+  checkpointState   Json?          @map("checkpoint_state")
+  currentStepIndex  Int            @default(0) @map("current_step_index")
+  startedAt         DateTime?      @map("started_at")
+  finishedAt        DateTime?      @map("finished_at")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
 
-  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   toolCalls ToolCall[]
+  steps     AgentStep[]
 
   @@index([workspaceId, status])
   @@map("agent_runs")
@@ -487,4 +493,191 @@ model AuditEvent {
   @@index([workspaceId, createdAt])
   @@index([targetType, targetId])
   @@map("audit_events")
+}
+
+// -------------------------------------------------------------
+// Phase 1: Stateful Agent Resumption & Daily Digest
+// -------------------------------------------------------------
+
+enum AgentStepStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+model AgentStep {
+  id             String          @id @default(uuid())
+  agentRunId     String          @map("agent_run_id")
+  stepNumber     Int             @map("step_number")
+  name           String
+  status         AgentStepStatus @default(PENDING)
+  inputPayload   Json?           @map("input_payload")
+  outputPayload  Json?           @map("output_payload")
+  stateSnapshot  Json?           @map("state_snapshot")
+  error          String?
+  durationMs     Int?            @map("duration_ms")
+  startedAt      DateTime?       @map("started_at")
+  finishedAt     DateTime?       @map("finished_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
+
+  @@unique([agentRunId, stepNumber])
+  @@index([agentRunId, status])
+  @@map("agent_steps")
+}
+
+enum DigestItemStatus {
+  PENDING_REVIEW
+  REVIEWED
+  DISMISSED
+}
+
+model DailyReviewDigestItem {
+  id          String           @id @default(uuid())
+  workspaceId String           @map("workspace_id")
+  userId      String           @map("user_id")
+  agentRunId  String?          @map("agent_run_id")
+  title       String
+  summary     String
+  category    String           @default("agent_result")
+  payload     Json?
+  status      DigestItemStatus @default(PENDING_REVIEW)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  reviewedAt  DateTime?        @map("reviewed_at")
+
+  @@index([workspaceId, userId, status])
+  @@map("daily_review_digest_items")
+}
+
+// -------------------------------------------------------------
+// Phase 2: Plan Autopsy (Deterministic Cause + AI Narrative)
+// -------------------------------------------------------------
+
+enum AutopsyCause {
+  ESTIMATE_MISS
+  CAPACITY_CLASH
+  BLOCKER
+  AVOIDANCE
+  CHANGED_ASSUMPTION
+  AGENT_FAILURE
+}
+
+model PlanAutopsy {
+  id                 String       @id @default(uuid())
+  workspaceId        String       @map("workspace_id")
+  goalId             String?      @map("goal_id")
+  taskId             String?      @map("task_id")
+  primaryCause       AutopsyCause @map("primary_cause")
+  evidencePacket     Json         @map("evidence_packet")
+  explanation        String
+  rankedRecoveryJson Json         @map("ranked_recovery_json")
+  userVerifiedCause  String?      @map("user_verified_cause")
+  createdAt          DateTime     @default(now()) @map("created_at")
+
+  goal Goal? @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, primaryCause])
+  @@map("plan_autopsies")
+}
+
+// -------------------------------------------------------------
+// Phase 3: Exit Ramps (Pre-Committed Stop/Pivot Signals)
+// -------------------------------------------------------------
+
+enum ExitRampStatus {
+  MONITORING
+  TRIGGERED
+  ACKNOWLEDGED
+  PIVOTED
+}
+
+enum ExitSignalType {
+  SCHEDULE_SLIP_DAYS
+  BUDGET_OVERRUN
+  CONSECUTIVE_UNRESOLVED_BLOCKERS
+  EFFORT_THRESHOLD
+}
+
+model ExitRamp {
+  id             String         @id @default(uuid())
+  workspaceId    String         @map("workspace_id")
+  goalId         String         @map("goal_id")
+  signalType     ExitSignalType @map("signal_type")
+  thresholdValue Float          @map("threshold_value")
+  description    String
+  status         ExitRampStatus @default(MONITORING)
+  triggeredAt    DateTime?      @map("triggered_at")
+  evidenceJson   Json?          @map("evidence_json")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@map("exit_ramps")
+}
+
+// -------------------------------------------------------------
+// Phase 4: Capacity Pools in /planner
+// -------------------------------------------------------------
+
+model CapacityPoolSnapshot {
+  id                String   @id @default(uuid())
+  workspaceId       String   @map("workspace_id")
+  date              DateTime @db.Date
+  focusHoursBudget  Float    @default(4.0) @map("focus_hours_budget")
+  focusHoursPlanned Float    @default(0.0) @map("focus_hours_planned")
+  agentQuotaLimit   Int      @default(50)  @map("agent_quota_limit")
+  agentQuotaUsed    Int      @default(0)   @map("agent_quota_used")
+  reviewQuotaLimit  Int      @default(5)   @map("review_quota_limit")
+  reviewQuotaUsed   Int      @default(0)   @map("review_quota_used")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@unique([workspaceId, date])
+  @@map("capacity_pool_snapshots")
+}
+
+// -------------------------------------------------------------
+// Phase 5: Trust Ledger & Absence Autopilot
+// -------------------------------------------------------------
+
+enum AgentPermissionLevel {
+  PROPOSE_ONLY
+  ACT_WITH_NOTIFICATION
+}
+
+model AgentTrustLedger {
+  id                   String               @id @default(uuid())
+  workspaceId          String               @map("workspace_id")
+  agentType            String               @map("agent_type")
+  permissionLevel      AgentPermissionLevel @default(PROPOSE_ONLY) @map("permission_level")
+  consecutiveApprovals Int                  @default(0) @map("consecutive_approvals")
+  totalApprovals       Int                  @default(0) @map("total_approvals")
+  totalRejections      Int                  @default(0) @map("total_rejections")
+  lastDemotedAt        DateTime?            @map("last_demoted_at")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
+
+  @@unique([workspaceId, agentType])
+  @@map("agent_trust_ledgers")
+}
+
+model UserAbsenceState {
+  id                 String    @id @default(uuid())
+  workspaceId        String    @map("workspace_id")
+  userId             String    @map("user_id")
+  lastActiveAt       DateTime  @default(now()) @map("last_active_at")
+  isAutopilotActive  Boolean   @default(false) @map("is_autopilot_active")
+  autopilotStartedAt DateTime? @map("autopilot_started_at")
+  daysSlid           Int       @default(0) @map("days_slid")
+  pausedRecurrences  Boolean   @default(false) @map("paused_recurrences")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@unique([workspaceId, userId])
+  @@map("user_absence_states")
 }

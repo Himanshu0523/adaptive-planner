@@ -5,6 +5,7 @@ import { format, addWeeks, addDays } from "date-fns";
 import { GoalDescriptionStep } from "./GoalDescriptionStep";
 import { SuccessCriteriaStep } from "./SuccessCriteriaStep";
 import { AvailabilityStep } from "./AvailabilityStep";
+import { ExitRampsStep } from "./ExitRampsStep";
 import { GeneratedPlanReview } from "./GeneratedPlanReview";
 import { PlanApprovalFooter } from "./PlanApprovalFooter";
 import { useCreateGoal, useGeneratePlan } from "@/features/goals";
@@ -13,7 +14,7 @@ import { AlertCircle, Sparkles, Loader2 } from "lucide-react";
 
 export function GoalWizard({ onComplete, onCancel }) {
   const [step, setStep] = useState(1);
-  const maxStep = 4; // 1: Desc, 2: Criteria, 3: Constraints, 4: Plan Review
+  const maxStep = 5; // 1: Desc, 2: Criteria, 3: Constraints, 4: Exit Ramps, 5: Plan Review
 
   // Goal Inputs
   const [title, setTitle] = useState("");
@@ -23,6 +24,20 @@ export function GoalWizard({ onComplete, onCancel }) {
   const [targetDate, setTargetDate] = useState(defaultTarget);
   const [hoursPerWeek, setHoursPerWeek] = useState(8);
   const [selectedDays, setSelectedDays] = useState(["Mon", "Tue", "Thu", "Sat"]);
+  const [exitRamps, setExitRamps] = useState([
+    {
+      id: "SCHEDULE_SLIP_DAYS",
+      title: "Schedule Slip Buffer",
+      thresholdValue: 7,
+      description: "Trigger calm checkpoint if progress slips by > 7 days.",
+    },
+    {
+      id: "EFFORT_THRESHOLD",
+      title: "Effort Cap Without Deliverable",
+      thresholdValue: 15,
+      description: "Pause and re-scope after 15h without shipping milestone 1.",
+    },
+  ]);
 
   // Generated Plan State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -49,7 +64,7 @@ export function GoalWizard({ onComplete, onCancel }) {
 
       if (plan?.milestones && Array.isArray(plan.milestones) && plan.milestones.length > 0) {
         setMilestones(plan.milestones);
-        setStep(4);
+        setStep(5);
       } else {
         throw new Error("Plan was generated without milestones");
       }
@@ -66,7 +81,7 @@ export function GoalWizard({ onComplete, onCancel }) {
   };
 
   const handleNext = () => {
-    if (step === 3) {
+    if (step === 4) {
       generateDraftPlan(title);
     } else {
       setStep((s) => Math.min(s + 1, maxStep));
@@ -266,6 +281,13 @@ export function GoalWizard({ onComplete, onCancel }) {
       )}
 
       {step === 4 && (
+        <ExitRampsStep
+          exitRamps={exitRamps}
+          setExitRamps={setExitRamps}
+        />
+      )}
+
+      {step === 5 && (
         <GeneratedPlanReview
           milestones={milestones}
           onTaskChange={handleTaskChange}

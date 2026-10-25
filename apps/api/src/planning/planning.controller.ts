@@ -14,13 +14,17 @@ import {
   ApprovePlanRequestDto,
 } from '@adaptive-planner/contracts';
 import { PlanningService } from './planning.service';
+import { PlanAutopsyService, TaskSlipMetrics } from './autopsy/plan-autopsy.service';
 
 @ApiTags('Planning')
 @ApiBearerAuth()
 @UseGuards(AuthGuard)
 @Controller('plans')
 export class PlanningController {
-  constructor(private readonly planningService: PlanningService) {}
+  constructor(
+    private readonly planningService: PlanningService,
+    private readonly autopsyService: PlanAutopsyService,
+  ) {}
 
   @Post('generate')
   @ApiOperation({ summary: 'Generate a structured proposed plan using AI Model Gateway' })
@@ -46,6 +50,21 @@ export class PlanningController {
     @CurrentUser() user: AuthenticatedUserContext,
   ) {
     const result = await this.planningService.approvePlan(id, dto, user);
+    return {
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post('autopsy')
+  @ApiOperation({ summary: 'Run deterministic Plan Autopsy on a slip and rank recovery paths' })
+  @ApiResponse({ status: 200, description: 'Plan Autopsy performed with ranked recovery options' })
+  async runAutopsy(
+    @Body() metrics: TaskSlipMetrics,
+    @CurrentUser() user: AuthenticatedUserContext,
+  ) {
+    const result = await this.autopsyService.performAutopsy(metrics, user.workspaceId);
     return {
       success: true,
       data: result,

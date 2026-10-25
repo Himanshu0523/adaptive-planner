@@ -25,6 +25,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardBody, Button, Dialog } from "@/components/ui";
 import { useTodayTasks, useUpdateTask } from "@/features/tasks";
 import { useGoals } from "@/features/goals";
+import { CapacityPoolsBanner } from "@/features/planner/components/CapacityPoolsBanner";
 
 export default function PlannerPage() {
   const [viewMode, setViewMode] = useState("week"); // 'day' | 'week' | 'agenda'
@@ -135,6 +136,12 @@ export default function PlannerPage() {
           </Button>
         </div>
       </div>
+
+      {/* Phase 4: 3-Pool Capacity Budgets */}
+      <CapacityPoolsBanner
+        plannedHours={Math.round((tasks?.reduce((sum, t) => sum + (t.estimatedMinutes || 30), 0) || 90) / 60 * 10) / 10}
+        maxFocusHours={4.0}
+      />
 
       {/* Undo Toast Notification */}
       {undoToast && (
